@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "generate-wallet": "ts-node cli generate",
+    "donate": "ts-node cli execute --action donate",
+    "deposit": "ts-node cli execute --action deposit",
+    "withdraw": "ts-node cli execute --action withdraw"
   },
   "keywords": [],
   "author": "9oelM",

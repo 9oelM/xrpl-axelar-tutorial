@@ -13,6 +13,9 @@ async function generateWallet() {
 
   const client = new xrpl.Client(XRPL_RPC_URL);
   await client.connect();
+
+  console.log(`Generating and funding wallet...`);
+
   await client.fundWallet(user, { amount: "1000" });
 
   const walletData = {
@@ -22,6 +25,7 @@ async function generateWallet() {
 
   fs.writeFileSync("wallet.json", JSON.stringify(walletData, null, 2));
   console.log("Wallet generated and funded. Secret stored in wallet.json.");
+  console.log(`Check: https://devnet.xrpl.org/accounts/${walletData.address}`);
 
   await client.disconnect();
 }
@@ -167,7 +171,9 @@ async function cli() {
       return
     }
 
-    console.log(`Transaction successful. Check: https://devnet.xrpl.org/transactions/${result.result.hash}`);
+    console.log(`Transaction successful. Check: 
+- XRPL: https://devnet.xrpl.org/transactions/${result.result.hash}
+- Axelar: https://devnet-amplifier.axelarscan.io/gmp/${result.result.hash}`);
   }
 }
 

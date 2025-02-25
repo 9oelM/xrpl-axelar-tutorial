@@ -8,6 +8,7 @@ import {InvalidOp, InvalidTokenId, InvalidTokenAddress, InvalidSourceChain, Insu
 contract Bank is InterchainTokenExecutable {
     event Deposit(bytes indexed sourceAddress, bytes32 addressHash, uint256 amount);
     event Withdraw(bytes indexed sourceAddress, bytes32 addressHash, uint256 amount);
+    event Donate(bytes indexed sourceAddress, bytes32 addressHash, uint256 amount);
 
     string constant XRPL_AXELAR_CHAIN_ID = "xrpl-dev";
     bytes32 constant XRP_AXELAR_TOKEN_ID = 0xbfb47d376947093b7858c1c59a4154dd291d5b2251cb56a6f7159a070f0bd518;
@@ -53,7 +54,9 @@ contract Bank is InterchainTokenExecutable {
             withdraw(addressHash, requestedAmount);
 
             emit Withdraw(sourceAddress, addressHash, requestedAmount);
-        } else if (op == OP_DONATE) {} else {
+        } else if (op == OP_DONATE) {
+            emit Donate(sourceAddress, addressHash, amount);
+        } else {
             revert InvalidOp(op);
         }
         // InterchainTokenService(interchainTokenService).callContractWithInterchainToken(
