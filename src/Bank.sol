@@ -51,7 +51,7 @@ contract Bank is InterchainTokenExecutable {
 
             emit Deposit(sourceAddress, addressHash, amount);
         } else if (op == OP_WITHDRAW) {
-            withdraw(addressHash, requestedAmount);
+            withdraw(sourceAddress, addressHash, requestedAmount);
 
             emit Withdraw(sourceAddress, addressHash, requestedAmount);
         } else if (op == OP_DONATE) {
@@ -59,26 +59,33 @@ contract Bank is InterchainTokenExecutable {
         } else {
             revert InvalidOp(op);
         }
-        // InterchainTokenService(interchainTokenService).callContractWithInterchainToken(
-        //     tokenId,
-        //     DESTINATION_CHAIN,
-        //     destinationAddress,
-        //     amount / 2, // uint256 amount,
-        //     replyData, // bytes memory data,
-        //     0 // uint256 gasValue
-        // );
     }
 
     function deposit(bytes32 addressHash, uint256 amount) private {
         balances[addressHash] += amount;
     }
 
-    function withdraw(bytes32 addressHash, uint256 requestedAmount) private {
+    function withdraw(bytes memory sourceAddress, bytes32 addressHash, uint256 requestedAmount) private {
         uint256 balance = getBalance(addressHash);
         if (balance < requestedAmount) {
             revert InsufficientBalance(addressHash, requestedAmount, balance);
         }
         setBalance(addressHash, balance - requestedAmount);
+
+        InterchainTokenService(interchainTokenService).interchainTransfer(
+            // bytes32 tokenId,
+            XRP_AXELAR_TOKEN_ID,
+            // string calldata destinationChain,
+            XRPL_AXELAR_CHAIN_ID,
+            // bytes calldata destinationAddress,
+            sourceAddress,
+            // uint256 amount,
+            requestedAmount,
+            // bytes calldata metadata,
+            "",
+            // uint256 gasValue
+            0
+        );
     }
 
     function setBalance(bytes32 addressHash, uint256 balance) private {

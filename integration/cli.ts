@@ -1,6 +1,6 @@
 import * as xrpl from "xrpl";
 import { AbiCoder, id } from "ethers";
-import { asHexString, hex, withoutHexPrefix } from "./utils";
+import { asHexString, dropsToEVMSidechainXRPDecimals, hex, withoutHexPrefix } from "./utils";
 import { EVM_DESTINATION, XRPL_MULTISIG_ADDRESS, XRPL_RPC_URL } from "./constants";
 import yargs from "yargs/yargs";
 import fs from "fs";
@@ -66,10 +66,11 @@ async function sendOp(
 ) {
   const amount = op.type === `withdraw` ? "1" : op.amountInDrops.toString();
   const requestedAmount = op.type === `withdraw` ? op.requestedAmountInDrops : 0;
+  const requestedAmountInEVMSidechainDecimals = dropsToEVMSidechainXRPDecimals(BigInt(requestedAmount));
   
   const payloadDataHex = abiCoder.encode(
     ["bytes32", "uint256"],
-    [id(op.type), requestedAmount]
+    [id(op.type), requestedAmountInEVMSidechainDecimals]
   );
   const payload = withoutHexPrefix(payloadDataHex);
 
