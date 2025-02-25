@@ -3,6 +3,7 @@ pragma solidity 0.8.21;
 
 import {InterchainTokenExecutable} from "interchain-token-service/executable/InterchainTokenExecutable.sol";
 import {InterchainTokenService} from "interchain-token-service/InterchainTokenService.sol";
+import {ERC20} from "interchain-token-service/interchain-token/ERC20.sol";
 import {InvalidOp, InvalidTokenId, InvalidTokenAddress, InvalidSourceChain, InsufficientBalance} from "./Errors.sol";
 
 contract Bank is InterchainTokenExecutable {
@@ -72,6 +73,7 @@ contract Bank is InterchainTokenExecutable {
         }
         setBalance(addressHash, balance - requestedAmount);
 
+        ERC20(XRP_ERC20_ADDRESS).approve(interchainTokenService, requestedAmount);
         InterchainTokenService(interchainTokenService).interchainTransfer(
             // bytes32 tokenId,
             XRP_AXELAR_TOKEN_ID,
@@ -94,5 +96,13 @@ contract Bank is InterchainTokenExecutable {
 
     function getBalance(bytes32 addressHash) public view returns (uint256) {
         return balances[addressHash];
+    }
+
+    function myXRPBalance() public view returns (uint256) {
+        return ERC20(XRP_ERC20_ADDRESS).balanceOf(address(this));
+    }
+    
+    function XRPBalance(address addr) public view returns (uint256) {
+        return ERC20(XRP_ERC20_ADDRESS).balanceOf(addr);
     }
 }
