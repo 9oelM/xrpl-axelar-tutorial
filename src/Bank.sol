@@ -9,7 +9,7 @@ contract Bank is InterchainTokenExecutable {
     event Deposit(bytes indexed sourceAddress, bytes32 addressHash, uint256 amount);
     event Withdraw(bytes indexed sourceAddress, bytes32 addressHash, uint256 amount);
 
-    string constant DESTINATION_CHAIN = "xrpl";
+    string constant XRPL_AXELAR_CHAIN_ID = "xrpl-dev";
     bytes32 constant XRP_AXELAR_TOKEN_ID = 0xbfb47d376947093b7858c1c59a4154dd291d5b2251cb56a6f7159a070f0bd518;
     address constant XRP_ERC20_ADDRESS = 0xD4949664cD82660AaE99bEdc034a0deA8A0bd517;
 
@@ -38,7 +38,7 @@ contract Bank is InterchainTokenExecutable {
             revert InvalidTokenAddress(token);
         }
 
-        if (keccak256(abi.encodePacked(sourceChain)) != keccak256(abi.encodePacked("xrpl"))) {
+        if (keccak256(abi.encodePacked(sourceChain)) != keccak256(abi.encodePacked(XRPL_AXELAR_CHAIN_ID))) {
             revert InvalidSourceChain(sourceChain);
         }
 
