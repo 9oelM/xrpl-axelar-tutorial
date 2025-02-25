@@ -1,0 +1,2 @@
+forge-std/=lib/forge-std/src/
+interchain-token-service/=lib/interchain-token-service/contracts/
