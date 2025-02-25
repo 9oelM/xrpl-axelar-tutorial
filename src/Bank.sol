@@ -15,6 +15,8 @@ contract Bank is InterchainTokenExecutable {
     error InvalidOp(bytes32 op);
     error InvalidTokenId(bytes32 tokenId);
     error InvalidSourceChain(string sourceChain);
+
+    constructor(address _interchainTokenService) InterchainTokenExecutable(_interchainTokenService) {}
     
     function _executeWithInterchainToken(
         bytes32 commandId,
@@ -25,7 +27,7 @@ contract Bank is InterchainTokenExecutable {
         address token,
         uint256 amount
     ) internal virtual override {
-        (bytes32 memory op) = abi.decode(data, (bytes32));
+        (bytes32 op) = abi.decode(data, (bytes32));
         
         if (op == OP_DEPOSIT) {
             deposit();

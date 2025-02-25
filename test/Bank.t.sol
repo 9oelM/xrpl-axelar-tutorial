@@ -8,6 +8,6 @@ contract BankTest is Test {
     Bank public bank;
 
     function setUp() public {
-        bank = new Bank();
+        bank = new Bank(address(0x11));
     }
 }

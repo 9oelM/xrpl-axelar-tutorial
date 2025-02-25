@@ -12,7 +12,7 @@ contract BankScript is Script {
     function run() public {
         vm.startBroadcast();
 
-        bank = new Bank();
+        bank = new Bank(address(0x11));
 
         vm.stopBroadcast();
     }
