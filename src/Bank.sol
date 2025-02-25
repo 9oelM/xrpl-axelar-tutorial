@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.21;
 
-import {InterchainTokenExecutable} from "interchain-token-service/executable/InterchainTokenExecutable.sol";
-import {InterchainTokenService} from "interchain-token-service/InterchainTokenService.sol";
+import {InterchainTokenExecutable} from "lib/interchain-token-service/contracts/executable/InterchainTokenExecutable.sol";
+import {InterchainTokenService} from "lib/interchain-token-service/contracts/InterchainTokenService.sol";
 
 contract Bank {
     string constant DESTINATION_CHAIN = "xrpl";
@@ -16,7 +16,7 @@ contract Bank {
     error InvalidTokenId(bytes32 tokenId);
     error InvalidSourceChain(string sourceChain);
 
-    constructor(address _interchainTokenService) {}
+    constructor(address _interchainTokenService) InterchainTokenExecutable(_interchainTokenService) {}
     
     function _executeWithInterchainToken(
         bytes32 commandId,
@@ -26,7 +26,7 @@ contract Bank {
         bytes32 tokenId,
         address token,
         uint256 amount
-    ) internal virtual {
+    ) internal virtual override {
         (bytes32 op) = abi.decode(data, (bytes32));
         
         if (op == OP_DEPOSIT) {
