@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.21;
 
-import {InterchainTokenExecutable} from "lib/interchain-token-service/contracts/executable/InterchainTokenExecutable.sol";
-import {InterchainTokenService} from "lib/interchain-token-service/contracts/InterchainTokenService.sol";
+import {InterchainTokenExecutable} from "interchain-token-service/executable/InterchainTokenExecutable.sol";
+import {InterchainTokenService} from "interchain-token-service/InterchainTokenService.sol";
 
 contract Bank {
     string constant DESTINATION_CHAIN = "xrpl";

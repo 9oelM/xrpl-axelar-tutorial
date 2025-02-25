@@ -1,0 +1,4 @@
+forge-std/=lib/forge-std/src/
+interchain-token-service/=lib/interchain-token-service/contracts/
+axelar-gmp-sdk-solidity/=lib/axelar-gmp-sdk-solidity/contracts/
+@axelar-network/axelar-gmp-sdk-solidity/=lib/axelar-gmp-sdk-solidity/
