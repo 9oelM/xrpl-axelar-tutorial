@@ -1,0 +1,24 @@
+{
+  "name": "integration",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "generate-wallet": "ts-node cli generate",
+    "donate": "ts-node cli execute --action donate",
+    "deposit": "ts-node cli execute --action deposit",
+    "withdraw": "ts-node cli execute --action withdraw"
+  },
+  "keywords": [],
+  "author": "9oelM",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "xrpl": "^4.2.0",
+    "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "@types/yargs": "^17.0.33",
+    "ethers": "^6.13.5",
+    "ts-node": "^10.9.2"
+  }
+}
