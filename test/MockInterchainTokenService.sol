@@ -18,4 +18,13 @@ contract MockInterchainTokenService {
             commandId, sourceChain, sourceAddress, data, tokenId, token, amount
         );
     }
+
+    function interchainTransfer(
+        bytes32 tokenId,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata metadata,
+        uint256 gasValue
+    ) public {}
 }

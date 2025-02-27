@@ -73,7 +73,6 @@ contract Bank is InterchainTokenExecutable {
         }
         setBalance(addressHash, balance - requestedAmount);
 
-        ERC20(XRP_ERC20_ADDRESS).approve(interchainTokenService, requestedAmount);
         InterchainTokenService(interchainTokenService).interchainTransfer(
             // bytes32 tokenId,
             XRP_AXELAR_TOKEN_ID,
