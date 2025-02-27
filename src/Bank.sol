@@ -101,7 +101,7 @@ contract Bank is InterchainTokenExecutable {
     function myXRPBalance() public view returns (uint256) {
         return ERC20(XRP_ERC20_ADDRESS).balanceOf(address(this));
     }
-    
+
     function XRPBalance(address addr) public view returns (uint256) {
         return ERC20(XRP_ERC20_ADDRESS).balanceOf(addr);
     }
