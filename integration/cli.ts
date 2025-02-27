@@ -58,14 +58,14 @@ async function sendOp(
   user: xrpl.Wallet,
   op: {
     type: "deposit" | "donate"
-    amountInDrops: bigint
+    amountInXRP: string
   } | {
     type: "withdraw"
-    requestedAmountInDrops: bigint
+    requestedAmountInXRP: string
   }
 ) {
-  const amount = op.type === `withdraw` ? "1" : op.amountInDrops.toString();
-  const requestedAmount = op.type === `withdraw` ? op.requestedAmountInDrops : 0;
+  const amount = op.type === `withdraw` ? "1" : xrpl.xrpToDrops(op.amountInXRP)
+  const requestedAmount = op.type === `withdraw` ? xrpl.xrpToDrops(op.requestedAmountInXRP) : 0;
   const requestedAmountInEVMSidechainDecimals = dropsToEVMSidechainXRPDecimals(BigInt(requestedAmount));
   
   const payloadDataHex = abiCoder.encode(
@@ -74,7 +74,7 @@ async function sendOp(
   );
   const payload = withoutHexPrefix(payloadDataHex);
 
-  const depositTx: xrpl.Transaction = {
+  const tx: xrpl.Transaction = {
     TransactionType: "Payment",
     Account: user.address,
     Amount: amount,
@@ -87,13 +87,15 @@ async function sendOp(
     ],
   };
 
-  const prepared = await client.autofill(depositTx);
+  console.log(JSON.stringify(tx, null, 2));
+
+  const prepared = await client.autofill(tx);
   const signed = user.sign(prepared);
   const txRes = await client.submitAndWait(signed.tx_blob);
   return txRes;
 }
 
-async function run(action: string, amount: bigint) {
+async function run(action: string, amount: string) {
   const client = new xrpl.Client(XRPL_RPC_URL);
   await client.connect();
 
@@ -107,12 +109,12 @@ async function run(action: string, amount: bigint) {
   }
 
   if (action === "withdraw") {
-    const result = await sendOp(client, user, { type: "withdraw", requestedAmountInDrops: amount });
+    const result = await sendOp(client, user, { type: "withdraw", requestedAmountInXRP: amount });
 
     await client.disconnect();
     return  result;
   } else if (action === "deposit" || action === "donate") {
-    const result = await sendOp(client, user, { type: action, amountInDrops: amount });
+    const result = await sendOp(client, user, { type: action, amountInXRP: amount });
 
     await client.disconnect();
     return result;
@@ -155,7 +157,7 @@ async function cli() {
     
     console.log(`Preparing ${action}...`)
 
-    const result = await run(action, BigInt(parsed.amount as number));
+    const result = await run(action, parsed.amount as string);
 
     if (!result) {
       console.error("Error executing transaction.");
