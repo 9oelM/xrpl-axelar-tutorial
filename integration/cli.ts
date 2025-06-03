@@ -210,8 +210,7 @@ const argv = yargs(process.argv.slice(2))
       describe: "Amount in XRP for withdrawal. e.g., 0.1 for 0.1 XRP",
     }).option("account", {
       type: "string",
-      demandOption: true,
-      describe: "XRPL account address to withdraw to",
+      describe: "XRPL account address to withdraw to. Defaults to the address in ./wallet.json. e.g., rEcqMLjKftZWTyYpGzj1jQkBefsMWcxENP",
     });
   })
   .help().argv;
@@ -298,17 +297,23 @@ async function cli() {
         break;
     }
     case 'withdraw': {
-        const xrplAccount = parsed.account as string;
+        let xrplAccount = parsed.account as string;
         const xrpAmount = parsed.amount as string;
-
-        if (!xrplAccount) {
-            console.error("XRPL account address is required");
-            return;
-        }
 
         if (!xrpAmount) {
             console.error("Amount is required");
             return;
+        }
+
+        if (!xrplAccount) {
+            console.log("No account specified, using wallet from wallet.json...");
+            const wallet = await loadWallet();
+            if (!wallet) {
+                console.error("No wallet found in wallet.json. Please generate a wallet first or specify an account.");
+                return;
+            }
+            xrplAccount = wallet.address;
+            console.log(`Using account: ${xrplAccount}`);
         }
 
         console.log(`Preparing withdraw request...`);
