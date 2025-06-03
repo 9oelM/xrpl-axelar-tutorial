@@ -1,9 +1,40 @@
 import * as xrpl from "xrpl";
 import { AbiCoder, id } from "ethers";
-import { asHexString, dropsToEVMSidechainXRPDecimals, hex, withoutHexPrefix } from "./utils";
-import { EVM_DESTINATION, XRPL_MULTISIG_ADDRESS, XRPL_RPC_URL } from "./constants";
+import { hex, isHexString, withoutHexPrefix } from "./utils";
+import { XRPL_MULTISIG_ADDRESS, XRPL_RPC_URL } from "./constants";
 import yargs from "yargs/yargs";
 import fs from "fs";
+import axios from "axios";
+import dotenv from "dotenv";
+import path from "path";
+import { sign } from "ripple-keypairs";
+
+dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
+
+// Type-safe configuration
+interface Config {
+  rpcUrl: string;
+  bankAddress: string;
+}
+
+function getConfig(): Config {
+  const rpcUrl = process.env.WITHDRAW_RELAYER_RPC_URL;
+  const bankAddress = process.env.EVM_BANK_ADDRESS;
+
+  if (!rpcUrl)
+    throw new Error(
+      "WITHDRAW_RELAYER_RPC_URL environment variable is required",
+    );
+  if (!bankAddress)
+    throw new Error("EVM_BANK_ADDRESS environment variable is required");
+
+  return {
+    rpcUrl,
+    bankAddress,
+  };
+}
+
+const config = getConfig();
 
 const abiCoder = AbiCoder.defaultAbiCoder();
 
@@ -23,11 +54,9 @@ async function generateWallet() {
     secret: user.seed!,
   };
 
-  fs.writeFileSync("wallet.json", JSON.stringify(walletData, null, 2));
-  console.log("Wallet generated and funded. Secret stored in wallet.json.");
-  console.log(`Check: https://devnet.xrpl.org/accounts/${walletData.address}`);
-
   await client.disconnect();
+
+  return walletData;
 }
 
 async function loadWallet() {
@@ -39,13 +68,15 @@ async function loadWallet() {
   const walletData = JSON.parse(fs.readFileSync("wallet.json", "utf-8"));
 
   if (!walletData.secret) {
-    console.error("No secret found in wallet.json. Please generate a wallet again.");
+    console.error(
+      "No secret found in wallet.json. Please generate a wallet again.",
+    );
     return;
   }
 
   try {
     return xrpl.Wallet.fromSeed(walletData.secret, {
-      algorithm: xrpl.ECDSA.secp256k1
+      algorithm: xrpl.ECDSA.secp256k1,
     });
   } catch (e) {
     console.error("Error loading wallet from secret:", e);
@@ -57,33 +88,51 @@ async function sendOp(
   client: xrpl.Client,
   user: xrpl.Wallet,
   op: {
-    type: "deposit" | "donate"
-    amountInXRP: string
-  } | {
-    type: "withdraw"
-    requestedAmountInXRP: string
-  }
+    type: "deposit" | "donate";
+    amountInXRP: string;
+    evmDestination: string;
+  },
 ) {
-  const amount = op.type === `withdraw` ? "1" : xrpl.xrpToDrops(op.amountInXRP)
-  const requestedAmount = op.type === `withdraw` ? xrpl.xrpToDrops(op.requestedAmountInXRP) : 0;
-  const requestedAmountInEVMSidechainDecimals = dropsToEVMSidechainXRPDecimals(BigInt(requestedAmount));
-  
-  const payloadDataHex = abiCoder.encode(
-    ["bytes32", "uint256"],
-    [id(op.type), requestedAmountInEVMSidechainDecimals]
-  );
+  const amount = xrpl.xrpToDrops(op.amountInXRP);
+
+  const payloadDataHex = abiCoder.encode(["bytes32"], [id(op.type)]);
   const payload = withoutHexPrefix(payloadDataHex);
+
+  const axelarFee = xrpl.xrpToDrops(`1`);
 
   const tx: xrpl.Transaction = {
     TransactionType: "Payment",
     Account: user.address,
-    Amount: amount,
+    Amount: String(BigInt(amount) + BigInt(axelarFee)),
     Destination: XRPL_MULTISIG_ADDRESS,
     Memos: [
-      { Memo: { MemoType: hex("destination_address"), MemoData: asHexString(EVM_DESTINATION) } },
-      { Memo: { MemoType: hex("destination_chain"), MemoData: hex("xrpl-evm-devnet") } },
-      { Memo: { MemoType: hex("gas_fee_amount"), MemoData: "00" } },
-      { Memo: { MemoType: hex("payload"), MemoData: payload } }
+      {
+        Memo: {
+          MemoType: hex("type"),
+          MemoData: hex("interchain_transfer"),
+        },
+      },
+      {
+        Memo: {
+          MemoType: hex("destination_address"),
+          MemoData: hex(withoutHexPrefix(op.evmDestination)),
+        },
+      },
+      {
+        Memo: {
+          MemoType: hex("destination_chain"),
+          MemoData: hex("xrpl-evm"),
+        },
+      },
+      {
+        Memo: {
+          MemoType: hex("gas_fee_amount"),
+          MemoData: hex(axelarFee),
+        },
+      },
+      ...(op.type === "donate"
+        ? []
+        : [{ Memo: { MemoType: hex("payload"), MemoData: payload } }]),
     ],
   };
 
@@ -95,7 +144,58 @@ async function sendOp(
   return txRes;
 }
 
-async function run(action: string, amount: string) {
+async function withdraw(xrpAmount: string) {
+  try {
+    // Load wallet to sign the request
+    const wallet = await loadWallet();
+    if (!wallet) {
+      console.error(
+        "No wallet found in wallet.json. Please generate a wallet first.",
+      );
+      return;
+    }
+
+    // Create payload to sign
+    const payload = {
+      withdrawAccount: wallet.address,
+      requestedAmount: xrpAmount,
+      timestamp: Date.now(),
+    };
+
+    // Sign the payload
+    const message = JSON.stringify(payload);
+    const signature = sign(hex(message), wallet.privateKey);
+
+    const response = await axios.post("http://localhost:3000/withdraw", {
+      ...payload,
+      publicKey: wallet.publicKey,
+      signature,
+    });
+
+    if (response.data.success) {
+      console.log(`Withdraw transaction submitted successfully:
+- Transaction Hash: ${response.data.transactionHash}
+- Block Number: ${response.data.blockNumber}
+- Gas Used: ${response.data.gasUsed}`);
+    } else {
+      console.error("Withdraw request failed:", response.data.error);
+    }
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      console.error(
+        "Error communicating with withdraw relayer:",
+        error.response?.data || error.message,
+      );
+    } else {
+      console.error(
+        "Unexpected error:",
+        error instanceof Error ? error.message : String(error),
+      );
+    }
+  }
+}
+
+async function run(action: string, amount: string, evmDestination: string) {
   const client = new xrpl.Client(XRPL_RPC_URL);
   await client.connect();
 
@@ -108,41 +208,69 @@ async function run(action: string, amount: string) {
     return;
   }
 
-  if (action === "withdraw") {
-    const result = await sendOp(client, user, { type: "withdraw", requestedAmountInXRP: amount });
+  if (action === "deposit") {
+    const result = await sendOp(client, user, {
+      type: action,
+      amountInXRP: amount,
+      evmDestination,
+    });
 
     await client.disconnect();
-    return  result;
-  } else if (action === "deposit" || action === "donate") {
-    const result = await sendOp(client, user, { type: action, amountInXRP: amount });
+    return result;
+  } else if (action === "donate") {
+    const wallet = await generateWallet();
+    const fundedUser = xrpl.Wallet.fromSeed(wallet.secret, {
+      algorithm: xrpl.ECDSA.secp256k1,
+    });
+    const result = await sendOp(client, fundedUser, {
+      type: action,
+      amountInXRP: amount,
+      evmDestination,
+    });
 
     await client.disconnect();
     return result;
   } else {
-    throw("Invalid action. Please choose deposit, donate, or withdraw.");
+    throw "Invalid action. Please choose deposit, donate, or withdraw.";
   }
 }
 
 const argv = yargs(process.argv.slice(2))
-  .command('generate', 'Generate a new wallet and fund it', {}, () => {
-    generateWallet().catch(console.error);
-  })
-  .command('execute', 'Execute a transaction', (yargs) => {
-    return yargs
-      .option("action", {
-        alias: "a",
+  .command("generate", "Generate a new wallet and fund it", {}, async () => {})
+  .command(
+    "fund-evm-address",
+    `Fund any EVM address on EVM sidechain`,
+    (yargs) => {
+      return yargs.option("destination", {
         type: "string",
         demandOption: true,
-        describe: "Action to perform: deposit, donate, or withdraw"
-      })
-      .option("amount", {
+        describe: "EVM destination address to fund",
+      });
+    },
+  )
+  .command(
+    "deposit",
+    "Deposit XRP into the Bank contract from the address specified in ./wallet.json",
+    (yargs) => {
+      return yargs.option("amount", {
         type: "number",
         demandOption: true,
-        describe: "Amount in drops for deposit, donate, or withdraw",
-      })
-  })
-  .help()
-  .argv;
+        describe: "Amount in XRP for deposit. e.g., 0.1 for 0.1 XRP",
+      });
+    },
+  )
+  .command(
+    "withdraw",
+    "Withdraw from the Bank contract to the address specified in ./wallet.json",
+    (yargs) => {
+      return yargs.option("amount", {
+        type: "number",
+        demandOption: true,
+        describe: "Amount in XRP for withdrawal. e.g., 0.1 for 0.1 XRP",
+      });
+    },
+  )
+  .help().argv;
 
 async function cli() {
   const parsed = await argv;
@@ -152,31 +280,109 @@ async function cli() {
     return;
   }
 
-  if (parsed._[0] === `execute`) {
-    const action = parsed.action as string;
-    
-    console.log(`Preparing ${action}...`)
+  switch (parsed._[0]) {
+    case "deposit": {
+      const evmDestination = config.bankAddress;
 
-    const result = await run(action, parsed.amount as string);
+      if (!isHexString(withoutHexPrefix(evmDestination))) {
+        console.error("Invalid EVM destination address: ", evmDestination);
+        return;
+      }
 
-    if (!result) {
-      console.error("Error executing transaction.");
-      return
+      const xrpAmount = parsed.amount as string;
+
+      console.log(`Preparing deposit tx...`);
+
+      const result = await run(`deposit`, xrpAmount, evmDestination);
+
+      if (!result) {
+        console.error("Error executing transaction.");
+        return;
+      }
+
+      if (!result.result.meta || typeof result.result.meta === "string") {
+        console.error("Error getting transaction metadata.");
+        return;
+      }
+
+      if (result.result.meta.TransactionResult !== "tesSUCCESS") {
+        console.error(
+          "Transaction failed:",
+          result.result.meta.TransactionResult,
+        );
+        return;
+      }
+
+      console.log(`Transaction pending. Check: 
+- XRPL: https://testnet.xrpl.org/transactions/${result.result.hash}
+- Axelar: https://testnet.axelarscan.io/gmp/${result.result.hash}`);
+      break;
     }
+    case "fund-evm-address": {
+      const evmDestination = parsed.destination as string;
 
-    if (!result.result.meta || typeof result.result.meta === "string") {
-      console.error("Error getting transaction metadata.");
-      return
+      if (!isHexString(withoutHexPrefix(evmDestination))) {
+        console.error("Invalid EVM destination address: ", evmDestination);
+        return;
+      }
+
+      console.log(`Funding an EVM address...`);
+
+      const result = await run("donate", `50`, evmDestination);
+
+      if (!result) {
+        console.error("Error executing transaction.");
+        return;
+      }
+
+      if (!result.result.meta || typeof result.result.meta === "string") {
+        console.error("Error getting transaction metadata.");
+        return;
+      }
+
+      if (result.result.meta.TransactionResult !== "tesSUCCESS") {
+        console.error(
+          "Transaction failed:",
+          result.result.meta.TransactionResult,
+        );
+        return;
+      }
+
+      console.log(`Transaction pending. Check:
+- XRPL: https://testnet.xrpl.org/transactions/${result.result.hash}
+- Axelar: https://testnet.axelarscan.io/gmp/${result.result.hash}`);
+      break;
     }
+    case "withdraw": {
+      const xrpAmount = parsed.amount as string;
 
-    if (result.result.meta.TransactionResult !== "tesSUCCESS") {
-      console.error("Transaction failed:", result.result.meta.TransactionResult);
-      return
+      if (!xrpAmount) {
+        console.error("Amount is required");
+        return;
+      }
+
+      console.log(`Preparing withdraw request...`);
+      await withdraw(xrpAmount);
+      break;
     }
-
-    console.log(`Transaction successful. Check: 
-- XRPL: https://devnet.xrpl.org/transactions/${result.result.hash}
-- Axelar: https://devnet-amplifier.axelarscan.io/gmp/${result.result.hash}`);
+    case "generate": {
+      try {
+        const walletData = await generateWallet();
+        fs.writeFileSync("wallet.json", JSON.stringify(walletData, null, 2));
+        console.log(
+          "Wallet generated and funded. Secret stored in wallet.json.",
+        );
+        console.log(
+          `Check: https://testnet.xrpl.org/accounts/${walletData.address}`,
+        );
+      } catch (error) {
+        console.error("Error generating wallet:", error);
+      }
+      break;
+    }
+    default:
+      console.error("Unknown command:", parsed._[0]);
+      break;
   }
 }
 

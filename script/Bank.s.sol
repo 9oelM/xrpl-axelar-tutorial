@@ -7,7 +7,9 @@ import {Bank} from "../src/Bank.sol";
 contract BankScript is Script {
     Bank public bank;
 
-    address ITS = address(0x1a7580C2ef5D485E069B7cf1DF9f6478603024d3);
+    // https://explorer.testnet.xrplevm.org/address/0xB5FB4BE02232B1bBA4dC8f81dc24C26980dE9e3C
+    address ITS = address(0xB5FB4BE02232B1bBA4dC8f81dc24C26980dE9e3C);
+    address withdrawRelayer = vm.envAddress("WITHDRAW_RELAYER_ADDRESS");
 
     function setUp() public {}
 
@@ -15,7 +17,7 @@ contract BankScript is Script {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        bank = new Bank(ITS);
+        bank = new Bank(ITS, withdrawRelayer);
 
         vm.stopBroadcast();
     }

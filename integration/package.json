@@ -1,24 +1,29 @@
 {
   "name": "integration",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "",
+  "main": "cli.ts",
   "scripts": {
-    "generate-wallet": "ts-node cli generate",
-    "donate": "ts-node cli execute --action donate",
-    "deposit": "ts-node cli execute --action deposit",
-    "withdraw": "ts-node cli execute --action withdraw"
+    "generate": "tsx cli.ts generate",
+    "fund-evm-address": "tsx cli.ts fund-evm-address",
+    "deposit": "tsx cli.ts deposit",
+    "withdraw": "tsx cli.ts withdraw"
   },
   "keywords": [],
   "author": "9oelM",
   "license": "ISC",
-  "description": "",
   "dependencies": {
-    "xrpl": "^4.2.0",
+    "axios": "^1.6.7",
+    "dotenv": "^16.5.0",
+    "ethers": "^6.11.1",
+    "ripple-keypairs": "^2.0.0",
+    "xrpl": "^4.2.5",
     "yargs": "^17.7.2"
   },
   "devDependencies": {
-    "@types/yargs": "^17.0.33",
-    "ethers": "^6.13.5",
-    "ts-node": "^10.9.2"
+    "@types/node": "^20.11.24",
+    "@types/yargs": "^17.0.32",
+    "tsx": "^4.19.4",
+    "typescript": "^5.3.3"
   }
 }
