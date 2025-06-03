@@ -16,6 +16,7 @@
     "axios": "^1.6.7",
     "dotenv": "^16.5.0",
     "ethers": "^6.11.1",
+    "ripple-keypairs": "^2.0.0",
     "xrpl": "^4.2.5",
     "yargs": "^17.7.2"
   },

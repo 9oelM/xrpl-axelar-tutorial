@@ -7,9 +7,12 @@
         "withdraw-relayer"
     ],
     "scripts": {
-      "generate-wallet": "npm run -w integration generate",
-      "fund-evm-address": "npm run -w integration fund-evm-address",
-      "deposit": "npm run -w integration deposit",
-      "withdraw": "npm run -w integration withdraw"
+        "generate-wallet": "npm run -w integration generate",
+        "fund-evm-address": "npm run -w integration fund-evm-address",
+        "deposit": "npm run -w integration deposit",
+        "withdraw": "npm run -w integration withdraw"
+    },
+    "dependencies": {
+        "ripple-keypairs": "^2.0.0"
     }
 }

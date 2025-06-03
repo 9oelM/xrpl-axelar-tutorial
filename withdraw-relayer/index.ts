@@ -3,6 +3,7 @@ import { ethers } from 'ethers';
 import dotenv from 'dotenv';
 import path from 'path';
 import xrpl from 'xrpl';
+import { verify } from 'ripple-keypairs';
 
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
@@ -60,11 +61,11 @@ const contract = new ethers.Contract(
 // Endpoint to handle withdraw requests
 app.post('/withdraw', async (req, res) => {
     try {
-        const { withdrawAccount, requestedAmount } = req.body;
+        const { withdrawAccount, requestedAmount, timestamp, signature, signer } = req.body;
 
-        if (!withdrawAccount || !requestedAmount) {
+        if (!withdrawAccount || !requestedAmount || !timestamp || !signature || !signer) {
             return res.status(400).json({
-                error: 'Missing required parameters: withdrawAccount and requestedAmount'
+                error: 'Missing required parameters: withdrawAccount, requestedAmount, timestamp, signature, and signer'
             });
         }
 
@@ -82,6 +83,29 @@ app.post('/withdraw', async (req, res) => {
             });
         }
 
+        // Verify signature
+        const payload = {
+            withdrawAccount,
+            requestedAmount,
+            timestamp
+        };
+        const message = JSON.stringify(payload);
+        
+        const isValid = verify(message, signature, signer);
+        if (!isValid) {
+            return res.status(401).json({
+                error: 'Invalid signature'
+            });
+        }
+
+        // Check if signature is expired (5 minutes)
+        const now = Date.now();
+        if (now - timestamp > 5 * 60 * 1000) {
+            return res.status(401).json({
+                error: 'Signature expired'
+            });
+        }
+
         // Convert withdrawAccount to bytes if it's not already
         const withdrawAccountBytes = ethers.toUtf8Bytes(withdrawAccount);
         
@@ -91,7 +115,8 @@ app.post('/withdraw', async (req, res) => {
         console.log(`Initiating withdraw transaction:
             Source Address: ${withdrawAccount}
             Amount: ${requestedAmount}
-            Contract Address: ${config.contractAddress}`);
+            Contract Address: ${config.contractAddress}
+            Signer: ${signer}`);
 
         // Call the contract's withdraw function
         const tx = await contract.withdraw(withdrawAccountBytes, amount);

@@ -15,6 +15,7 @@ import fs from "fs";
 import axios from "axios";
 import dotenv from 'dotenv';
 import path from 'path';
+import { sign } from "ripple-keypairs"
 
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
@@ -124,11 +125,30 @@ async function sendOp(
   return txRes;
 }
 
-async function withdraw(xrpAmount: string, xrplAccount: string) {
+async function withdraw(xrpAmount: string) {
     try {
+        // Load wallet to sign the request
+        const wallet = await loadWallet();
+        if (!wallet) {
+            console.error("No wallet found in wallet.json. Please generate a wallet first.");
+            return;
+        }
+
+        // Create payload to sign
+        const payload = {
+            withdrawAccount: wallet.address,
+            requestedAmount: xrpAmount,
+            timestamp: Date.now()
+        };
+
+        // Sign the payload
+        const message = JSON.stringify(payload);
+        const signature = sign(message, wallet.privateKey);
+
         const response = await axios.post('http://localhost:3000/withdraw', {
-            withdrawAccount: xrplAccount,
-            requestedAmount: xrpAmount
+            ...payload,
+            signature,
+            signer: wallet.address
         });
 
         if (response.data.success) {
@@ -304,7 +324,6 @@ async function cli() {
         break;
     }
     case 'withdraw': {
-        let xrplAccount = parsed.account as string;
         const xrpAmount = parsed.amount as string;
 
         if (!xrpAmount) {
@@ -312,19 +331,8 @@ async function cli() {
             return;
         }
 
-        if (!xrplAccount) {
-            console.log("No account specified, using wallet from wallet.json...");
-            const wallet = await loadWallet();
-            if (!wallet) {
-                console.error("No wallet found in wallet.json. Please generate a wallet first or specify an account.");
-                return;
-            }
-            xrplAccount = wallet.address;
-            console.log(`Using account: ${xrplAccount}`);
-        }
-
         console.log(`Preparing withdraw request...`);
-        await withdraw(xrpAmount, xrplAccount);
+        await withdraw(xrpAmount);
         break;
     }
     case 'generate': {
