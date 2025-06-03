@@ -4,7 +4,15 @@ pragma solidity 0.8.21;
 import {InterchainTokenExecutable} from "interchain-token-service/executable/InterchainTokenExecutable.sol";
 import {InterchainTokenService} from "interchain-token-service/InterchainTokenService.sol";
 import {ERC20} from "interchain-token-service/interchain-token/ERC20.sol";
-import {InvalidOp, InvalidTokenId, InvalidTokenAddress, InvalidSourceChain, InsufficientBalance, InvalidWithdrawRelayer, TakeGasFailed} from "./Errors.sol";
+import {
+    InvalidOp,
+    InvalidTokenId,
+    InvalidTokenAddress,
+    InvalidSourceChain,
+    InsufficientBalance,
+    InvalidWithdrawRelayer,
+    TakeGasFailed
+} from "./Errors.sol";
 
 contract Bank is InterchainTokenExecutable {
     event Deposit(bytes indexed sourceAddress, bytes32 addressHash, uint256 amount);
@@ -28,10 +36,9 @@ contract Bank is InterchainTokenExecutable {
         _;
     }
 
-    constructor(
-        address _interchainTokenService,
-        address _withdrawRelayer
-    ) InterchainTokenExecutable(_interchainTokenService) {
+    constructor(address _interchainTokenService, address _withdrawRelayer)
+        InterchainTokenExecutable(_interchainTokenService)
+    {
         if (_withdrawRelayer == address(0)) {
             revert InvalidWithdrawRelayer(_withdrawRelayer);
         }
@@ -55,13 +62,11 @@ contract Bank is InterchainTokenExecutable {
             revert InvalidTokenAddress(token);
         }
 
-        if (keccak256(abi.encodePacked(sourceChain)) 
-        != keccak256(abi.encodePacked(XRPL_AXELAR_CHAIN_ID))) {
+        if (keccak256(abi.encodePacked(sourceChain)) != keccak256(abi.encodePacked(XRPL_AXELAR_CHAIN_ID))) {
             revert InvalidSourceChain(sourceChain);
         }
 
-        (bytes32 op)
-            = abi.decode(data, (bytes32));
+        (bytes32 op) = abi.decode(data, (bytes32));
         bytes32 addressHash = keccak256(sourceAddress);
 
         if (op == OP_DEPOSIT) {

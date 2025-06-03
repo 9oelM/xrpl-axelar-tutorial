@@ -10,7 +10,7 @@ contract ForkTest is Test {
     Bank public bank;
     InterchainTokenService public interchainTokenService;
     address public withdrawRelayer;
-    
+
     // The XRPL address that already has a deposit
     bytes constant XRPL_ADDRESS_BYTES = hex"72684d79767a37427247746d524c344b616b4b504861373953776847576b79675958";
     address constant XRP_ERC20_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
@@ -31,7 +31,7 @@ contract ForkTest is Test {
 
         // Get the balance of the XRPL address
         uint256 balance = bank.balances(addressHash);
-        
+
         // Check if the balance is greater than zero
         assertGt(balance, 0);
     }
@@ -51,13 +51,13 @@ contract ForkTest is Test {
 
     // function testWithdraw() public {
     //     bytes32 addressHash = keccak256(XRPL_ADDRESS_BYTES);
-        
+
     //     // Get current balance
     //     uint256 currentBalance = bank.getBalance(addressHash);
-        
+
     //     // Test withdrawal
     //     uint256 withdrawAmount = 0.01 ether;
-        
+
     //     // Call withdraw as the withdrawRelayer
     //     vm.prank(withdrawRelayer);
     //     // 1 XRP for axelar gas
