@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 import {InterchainTokenExecutable} from "interchain-token-service/executable/InterchainTokenExecutable.sol";
 import {InterchainTokenService} from "interchain-token-service/InterchainTokenService.sol";
 import {ERC20} from "interchain-token-service/interchain-token/ERC20.sol";
-import {InvalidOp, InvalidTokenId, InvalidTokenAddress, InvalidSourceChain, InsufficientBalance} from "./Errors.sol";
+import {InvalidOp, InvalidTokenId, InvalidTokenAddress, InvalidSourceChain, InsufficientBalance, InvalidWithdrawRelayer} from "./Errors.sol";
 
 contract Bank is InterchainTokenExecutable {
     event Deposit(bytes indexed sourceAddress, bytes32 addressHash, uint256 amount);
@@ -16,15 +16,22 @@ contract Bank is InterchainTokenExecutable {
     address constant XRP_ERC20_ADDRESS = 0xD4949664cD82660AaE99bEdc034a0deA8A0bd517;
 
     bytes32 constant OP_DEPOSIT = keccak256("deposit");
-    bytes32 constant OP_WITHDRAW = keccak256("withdraw");
-    bytes32 constant OP_DONATE = keccak256("donate");
 
     mapping(bytes32 => uint256) public balances;
+    address public withdrawRelayer;
 
-    constructor(address _interchainTokenService) InterchainTokenExecutable(_interchainTokenService) {}
+    constructor(
+        address _interchainTokenService,
+        address _withdrawManager
+    ) InterchainTokenExecutable(_interchainTokenService) {
+        if (_withdrawManager == address(0)) {
+            revert InvalidWithdrawRelayer(_withdrawManager);
+        }
+        withdrawRelayer = _withdrawManager;
+    }
 
     function _executeWithInterchainToken(
-        bytes32 commandId,
+        bytes32 _commandId,
         string calldata sourceChain,
         bytes calldata sourceAddress,
         bytes calldata data,
@@ -40,23 +47,19 @@ contract Bank is InterchainTokenExecutable {
             revert InvalidTokenAddress(token);
         }
 
-        if (keccak256(abi.encodePacked(sourceChain)) != keccak256(abi.encodePacked(XRPL_AXELAR_CHAIN_ID))) {
+        if (keccak256(abi.encodePacked(sourceChain)) 
+        != keccak256(abi.encodePacked(XRPL_AXELAR_CHAIN_ID))) {
             revert InvalidSourceChain(sourceChain);
         }
 
-        (bytes32 op, uint256 requestedAmount) = abi.decode(data, (bytes32, uint256));
+        (bytes32 op)
+            = abi.decode(data, (bytes32));
         bytes32 addressHash = keccak256(sourceAddress);
 
         if (op == OP_DEPOSIT) {
             deposit(addressHash, amount);
 
             emit Deposit(sourceAddress, addressHash, amount);
-        } else if (op == OP_WITHDRAW) {
-            withdraw(sourceAddress, addressHash, requestedAmount);
-
-            emit Withdraw(sourceAddress, addressHash, requestedAmount);
-        } else if (op == OP_DONATE) {
-            emit Donate(sourceAddress, addressHash, amount);
         } else {
             revert InvalidOp(op);
         }
@@ -66,7 +69,13 @@ contract Bank is InterchainTokenExecutable {
         balances[addressHash] += amount;
     }
 
-    function withdraw(bytes memory sourceAddress, bytes32 addressHash, uint256 requestedAmount) private {
+    function setBalance(bytes32 addressHash, uint256 balance) private {
+        balances[addressHash] = balance;
+    }
+
+    function withdraw(bytes memory sourceAddress, uint256 requestedAmount) external {
+        bytes32 addressHash = keccak256(sourceAddress);
+
         uint256 balance = getBalance(addressHash);
         if (balance < requestedAmount) {
             revert InsufficientBalance(addressHash, requestedAmount, balance);
@@ -85,23 +94,11 @@ contract Bank is InterchainTokenExecutable {
             // bytes calldata metadata,
             "",
             // uint256 gasValue
-            0
+            1 ether / 10 // 0.1 XRP
         );
-    }
-
-    function setBalance(bytes32 addressHash, uint256 balance) private {
-        balances[addressHash] = balance;
     }
 
     function getBalance(bytes32 addressHash) public view returns (uint256) {
         return balances[addressHash];
-    }
-
-    function myXRPBalance() public view returns (uint256) {
-        return ERC20(XRP_ERC20_ADDRESS).balanceOf(address(this));
-    }
-
-    function XRPBalance(address addr) public view returns (uint256) {
-        return ERC20(XRP_ERC20_ADDRESS).balanceOf(addr);
     }
 }

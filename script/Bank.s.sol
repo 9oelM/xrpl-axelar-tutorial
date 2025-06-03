@@ -8,6 +8,7 @@ contract BankScript is Script {
     Bank public bank;
 
     address ITS = address(0x1a7580C2ef5D485E069B7cf1DF9f6478603024d3);
+    address withdrawRelayer = vm.envAddress("WITHDRAW_RELAYER_ADDRESS");
 
     function setUp() public {}
 
@@ -15,7 +16,7 @@ contract BankScript is Script {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        bank = new Bank(ITS);
+        bank = new Bank(ITS, withdrawRelayer);
 
         vm.stopBroadcast();
     }

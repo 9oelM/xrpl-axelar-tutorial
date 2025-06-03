@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "generate-wallet": "ts-node cli generate",
-    "donate": "ts-node cli execute --action donate",
+    "fund-withdraw-relayer": "ts-node cli fund-withdraw-relayer",
     "deposit": "ts-node cli execute --action deposit",
     "withdraw": "ts-node cli execute --action withdraw"
   },
@@ -13,7 +13,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "xrpl": "^4.2.0",
+    "xrpl": "^4.2.5",
     "yargs": "^17.7.2"
   },
   "devDependencies": {
