@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 import {InterchainTokenExecutable} from "interchain-token-service/executable/InterchainTokenExecutable.sol";
 import {InterchainTokenService} from "interchain-token-service/InterchainTokenService.sol";
 import {ERC20} from "interchain-token-service/interchain-token/ERC20.sol";
-import {InvalidOp, InvalidTokenId, InvalidTokenAddress, InvalidSourceChain, InsufficientBalance, InvalidWithdrawRelayer} from "./Errors.sol";
+import {InvalidOp, InvalidTokenId, InvalidTokenAddress, InvalidSourceChain, InsufficientBalance, InvalidWithdrawRelayer, TakeGasFailed} from "./Errors.sol";
 
 contract Bank is InterchainTokenExecutable {
     event Deposit(bytes indexed sourceAddress, bytes32 addressHash, uint256 amount);
@@ -81,7 +81,7 @@ contract Bank is InterchainTokenExecutable {
         balances[addressHash] = balance;
     }
 
-    function withdraw(bytes memory destinationAddress, uint256 requestedAmount) external payable onlyWithdrawRelayer {
+    function withdraw(bytes memory destinationAddress, uint256 requestedAmount) external onlyWithdrawRelayer {
         bytes32 addressHash = keccak256(destinationAddress);
 
         uint256 balance = getBalance(addressHash);
@@ -89,6 +89,17 @@ contract Bank is InterchainTokenExecutable {
             revert InsufficientBalance(addressHash, requestedAmount, balance);
         }
         setBalance(addressHash, balance - requestedAmount);
+
+        // take gas from the relayer
+        bool success = ERC20(XRP_ERC20_ADDRESS).transferFrom(
+            msg.sender,
+            address(this),
+            1 ether // 1 XRP for axelar gas
+        );
+
+        if (!success) {
+            revert TakeGasFailed();
+        }
 
         InterchainTokenService(interchainTokenService).interchainTransfer(
             // bytes32 tokenId,

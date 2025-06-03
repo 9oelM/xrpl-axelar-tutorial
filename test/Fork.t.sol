@@ -20,8 +20,8 @@ contract ForkTest is Test {
         // Set up withdraw relayer
         withdrawRelayer = address(0x07c58B4FD9E412847a52446CDF784d78B8aBd219);
 
-        // Deploy Bank contract
-        bank = Bank(address(0x8B4070d50145981C7F82Fd61a3098dA76CE5E3C0));
+        // Deployed Bank contract
+        bank = Bank(address(0x07c58B4FD9E412847a52446CDF784d78B8aBd219));
     }
 
     function testBalance() public view {
@@ -46,7 +46,7 @@ contract ForkTest is Test {
         // Call withdraw as the withdrawRelayer
         vm.prank(withdrawRelayer);
         // 1 XRP for axelar gas
-        bank.withdraw{value: 1 ether}(XRPL_ADDRESS_BYTES, withdrawAmount);
+        bank.withdraw(XRPL_ADDRESS_BYTES, withdrawAmount);
 
         // Verify balance was reduced
         assertEq(bank.getBalance(addressHash), currentBalance - withdrawAmount);

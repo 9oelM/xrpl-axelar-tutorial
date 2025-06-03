@@ -33,6 +33,8 @@ function getConfig(): Config {
     };
 }
 
+const XRP_EVM_CONTRACT_ADDRESS = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+
 const hex = (str: string): string => Buffer.from(str).toString("hex");
 
 const dropsToEVMSidechainXRPDecimals = (drops: bigint) => {
@@ -51,6 +53,11 @@ const contractABI = [
     "function withdraw(bytes memory destinationAddress, uint256 requestedAmount) external"
 ];
 
+const erc20ABI = [
+    "function approve(address spender, uint256 amount) external returns (bool)",
+    "function allowance(address owner, address spender) external view returns (uint256)"
+];
+
 // Initialize provider and contract
 const provider = new ethers.JsonRpcProvider(config.rpcUrl);
 const wallet = new ethers.Wallet(config.privateKey, provider);
@@ -60,9 +67,73 @@ const contract = new ethers.Contract(
     wallet
 );
 
+// Initialize XRP ERC20 contract and approve on startup
+const xrpContract = new ethers.Contract(
+    XRP_EVM_CONTRACT_ADDRESS,
+    erc20ABI,
+    wallet
+);
+
+// Track approval status
+let isApprovalComplete = false;
+let approvalPromise: Promise<void> | null = null;
+
+// Function to check approval status
+async function checkApprovalStatus() {
+    try {
+        const allowance = await xrpContract.allowance(wallet.address, config.contractAddress);
+        return allowance >= ethers.parseEther("100000000");
+    } catch (error) {
+        console.error("Error checking approval status:", error);
+        return false;
+    }
+}
+
+// Start approval process
+console.log("Starting XRP approval process...");
+approvalPromise = (async () => {
+    try {
+        // Check if we already have sufficient allowance
+        if (await checkApprovalStatus()) {
+            console.log("XRP already approved");
+            isApprovalComplete = true;
+            return;
+        }
+
+        // If not, proceed with approval
+        console.log("Approving XRP for gas...");
+        const tx = await xrpContract.approve(config.contractAddress, ethers.parseEther("100000000000000"));
+        await tx.wait();
+        
+        // Verify approval was successful
+        if (await checkApprovalStatus()) {
+            console.log("XRP approval successful");
+            isApprovalComplete = true;
+        } else {
+            throw new Error("Approval transaction completed but allowance not updated");
+        }
+    } catch (error) {
+        console.error("XRP approval failed:", error);
+        throw error;
+    }
+})();
+
 // Endpoint to handle withdraw requests
 app.post('/withdraw', async (req, res) => {
     try {
+        // Wait for approval if it's not complete
+        if (!isApprovalComplete) {
+            console.log("Waiting for XRP approval to complete...");
+            try {
+                await approvalPromise;
+            } catch (error) {
+                return res.status(500).json({
+                    error: 'XRP approval failed',
+                    details: error instanceof Error ? error.message : 'Unknown error'
+                });
+            }
+        }
+
         const { withdrawAccount, publicKey, requestedAmount, timestamp, signature } = req.body;
 
         if (!withdrawAccount || !publicKey || !requestedAmount || !timestamp || !signature) {
