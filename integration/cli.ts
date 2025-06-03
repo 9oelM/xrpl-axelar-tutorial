@@ -13,6 +13,10 @@ import {
 import yargs from "yargs/yargs";
 import fs from "fs";
 import axios from "axios";
+import dotenv from 'dotenv';
+import path from 'path';
+
+dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
 const abiCoder = AbiCoder.defaultAbiCoder();
 
@@ -173,16 +177,7 @@ async function run(action: string, amount: string, evmDestination: string) {
 
 const argv = yargs(process.argv.slice(2))
   .command("generate", "Generate a new wallet and fund it", {}, async () => {
-    try {
-      const walletData = await generateWallet();
-      fs.writeFileSync("wallet.json", JSON.stringify(walletData, null, 2));
-      console.log("Wallet generated and funded. Secret stored in wallet.json.");
-      console.log(
-        `Check: https://devnet.xrpl.org/accounts/${walletData.address}`,
-      );
-    } catch (error) {
-      console.error("Error generating wallet:", error);
-    }
+    
   })
   .command("fund-evm-address", `Fund any EVM address on EVM sidechain`, (yargs) => {
     return yargs.option("destination", {
@@ -318,6 +313,19 @@ async function cli() {
         console.log(`Preparing withdraw request...`);
         await withdraw(xrpAmount, xrplAccount);
         break;
+    }
+    case 'generate': {
+      try {
+        const walletData = await generateWallet();
+        fs.writeFileSync("wallet.json", JSON.stringify(walletData, null, 2));
+        console.log("Wallet generated and funded. Secret stored in wallet.json.");
+        console.log(
+          `Check: https://testnet.xrpl.org/accounts/${walletData.address}`,
+        );
+      } catch (error) {
+        console.error("Error generating wallet:", error);
+      }   
+      break;
     }
     default:
         console.error("Unknown command:", parsed._[0]);
