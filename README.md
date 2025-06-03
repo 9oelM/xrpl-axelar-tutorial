@@ -163,6 +163,6 @@ This is a tutorial for using depositing into and withdrawing from a contract on 
     # withdraw 0.3 XRP
     npm run withdraw -- --amount 0.3
     ```
-## How-to guides
+## Detailed how-to guides
 
 Access [the slides published here](https://www.figma.com/deck/MKVsACmVp2oo9L2InlXTGs/Expanding-XRPL-programmability%3A-hands-on-tutorial-with-Axelar-general-message-passing?node-id=19-45&t=AdpZdEiCn5Rm2BxH-1).

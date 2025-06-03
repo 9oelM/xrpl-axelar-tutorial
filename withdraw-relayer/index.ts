@@ -48,7 +48,7 @@ app.use(express.json());
 
 // Contract ABI - only including the withdraw function
 const contractABI = [
-    "function withdraw(bytes memory sourceAddress, uint256 requestedAmount) external"
+    "function withdraw(bytes memory destinationAddress, uint256 requestedAmount) external"
 ];
 
 // Initialize provider and contract
@@ -85,8 +85,6 @@ app.post('/withdraw', async (req, res) => {
                 error: 'Invalid XRP address format'
             });
         }
-
-        console.log(`typeof requestedAmount: ${typeof requestedAmount}`);
 
         // Validate requestedAmount
         if (isNaN(Number(requestedAmount)) || Number(requestedAmount) <= 0) {
@@ -134,7 +132,7 @@ app.post('/withdraw', async (req, res) => {
 
         // Call the contract's withdraw function
         const tx = await contract.withdraw(`0x${withdrawAccountBytes}`, amount, {
-            value: ethers.parseEther("1") // Send 1 ether as gas fee
+            value: ethers.parseEther("1") // Send 1 ether as axelar gas fee
         });
 
         console.log(`Transaction submitted:

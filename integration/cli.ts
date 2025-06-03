@@ -106,7 +106,7 @@ async function sendOp(
   const tx: xrpl.Transaction = {
     TransactionType: "Payment",
     Account: user.address,
-    Amount: amount + axelarFee,
+    Amount: String(BigInt(amount) + BigInt(axelarFee)),
     Destination: XRPL_MULTISIG_ADDRESS,
     Memos: [
       {

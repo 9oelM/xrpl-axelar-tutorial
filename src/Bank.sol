@@ -81,7 +81,7 @@ contract Bank is InterchainTokenExecutable {
         balances[addressHash] = balance;
     }
 
-    function withdraw(bytes memory destinationAddress, uint256 requestedAmount) external onlyWithdrawRelayer {
+    function withdraw(bytes memory destinationAddress, uint256 requestedAmount) external payable onlyWithdrawRelayer {
         bytes32 addressHash = keccak256(destinationAddress);
 
         uint256 balance = getBalance(addressHash);
