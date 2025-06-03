@@ -134,8 +134,9 @@ app.post('/withdraw', async (req, res) => {
         console.log(`Transaction confirmed:
             Hash: ${receipt.hash}
             Block Number: ${receipt.blockNumber}
-            Gas Used: ${receipt.gasUsed?.toString()}`);
-
+            Gas Used: ${receipt.gasUsed?.toString()}
+            Check: https://testnet.axelarscan.io/gmp/${receipt.hash}
+        `);
         res.json({
             success: true,
             transactionHash: receipt.hash,

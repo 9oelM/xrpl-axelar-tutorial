@@ -300,7 +300,7 @@ async function cli() {
             return;
         }
 
-        console.log(`Transaction successful. Check: 
+        console.log(`Transaction pending. Check: 
 - XRPL: https://testnet.xrpl.org/transactions/${result.result.hash}
 - Axelar: https://testnet.axelarscan.io/gmp/${result.result.hash}`);
         break;
@@ -335,7 +335,7 @@ async function cli() {
             return;
         }
 
-        console.log(`Transaction successful. Check:
+        console.log(`Transaction pending. Check:
 - XRPL: https://testnet.xrpl.org/transactions/${result.result.hash}
 - Axelar: https://testnet.axelarscan.io/gmp/${result.result.hash}`);
         break;
