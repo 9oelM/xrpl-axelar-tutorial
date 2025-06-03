@@ -2,7 +2,6 @@ import * as xrpl from "xrpl";
 import { AbiCoder, id } from "ethers";
 import {
   asHexString,
-  dropsToEVMSidechainXRPDecimals,
   hex,
   isHexString,
   withoutHexPrefix,
@@ -124,7 +123,7 @@ async function sendOp(
 async function withdraw(xrpAmount: string, xrplAccount: string) {
     try {
         const response = await axios.post('http://localhost:3000/withdraw', {
-            sourceAddress: xrplAccount,
+            withdrawAccount: xrplAccount,
             requestedAmount: xrpAmount
         });
 

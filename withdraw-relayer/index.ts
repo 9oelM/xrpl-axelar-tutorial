@@ -2,6 +2,7 @@ import express from 'express';
 import { ethers } from 'ethers';
 import dotenv from 'dotenv';
 import path from 'path';
+import xrpl from 'xrpl';
 
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
@@ -31,6 +32,12 @@ function getConfig(): Config {
     };
 }
 
+const dropsToEVMSidechainXRPDecimals = (drops: bigint) => {
+  // 0.000001 XRP = 1 drop = 1000000000000 on EVM Sidechain
+  // https://explorer.xrplevm.org/tx/0xfc3e47b3de64fa56d805957b7fe5d26cad5a0ce2fef1c781cc3c98e8f3a0d6d5?tab=logs
+  return drops * 1000000000000n;
+};
+
 const config = getConfig();
 
 const app = express();
@@ -38,7 +45,7 @@ app.use(express.json());
 
 // Contract ABI - only including the withdraw function
 const contractABI = [
-    "function withdraw(bytes memory sourceAddress, uint256 requestedAmount) external"
+    "function withdraw(bytes memory withdrawAccount, uint256 requestedAmount) external"
 ];
 
 // Initialize provider and contract
@@ -53,27 +60,41 @@ const contract = new ethers.Contract(
 // Endpoint to handle withdraw requests
 app.post('/withdraw', async (req, res) => {
     try {
-        const { sourceAddress, requestedAmount } = req.body;
+        const { withdrawAccount, requestedAmount } = req.body;
 
-        if (!sourceAddress || !requestedAmount) {
+        if (!withdrawAccount || !requestedAmount) {
             return res.status(400).json({
-                error: 'Missing required parameters: sourceAddress and requestedAmount'
+                error: 'Missing required parameters: withdrawAccount and requestedAmount'
             });
         }
 
-        // Convert sourceAddress to bytes if it's not already
-        const sourceAddressBytes = ethers.toUtf8Bytes(sourceAddress);
+        // Validate xrpl address
+        if (!xrpl.isValidAddress(withdrawAccount)) {
+            return res.status(400).json({
+                error: 'Invalid XRP address format'
+            });
+        }
+
+        // Validate requestedAmount
+        if (typeof requestedAmount !== 'string' || isNaN(Number(requestedAmount)) || Number(requestedAmount) <= 0) {
+            return res.status(400).json({
+                error: 'Invalid requestedAmount. It must be a positive number in string format, in the unit of native XRP.'
+            });
+        }
+
+        // Convert withdrawAccount to bytes if it's not already
+        const withdrawAccountBytes = ethers.toUtf8Bytes(withdrawAccount);
         
         // Convert requestedAmount to BigNumber
-        const amount = ethers.parseUnits(requestedAmount.toString(), 18);
+        const amount = dropsToEVMSidechainXRPDecimals(BigInt(xrpl.xrpToDrops(requestedAmount)));
 
         console.log(`Initiating withdraw transaction:
-            Source Address: ${sourceAddress}
+            Source Address: ${withdrawAccount}
             Amount: ${requestedAmount}
             Contract Address: ${config.contractAddress}`);
 
         // Call the contract's withdraw function
-        const tx = await contract.withdraw(sourceAddressBytes, amount);
+        const tx = await contract.withdraw(withdrawAccountBytes, amount);
         
         console.log(`Transaction submitted:
             Hash: ${tx.hash}
