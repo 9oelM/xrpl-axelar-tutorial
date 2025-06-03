@@ -4,10 +4,10 @@
   "description": "",
   "main": "cli.ts",
   "scripts": {
-    "generate-wallet": "ts-node cli generate",
-    "fund-withdraw-relayer": "ts-node cli fund-withdraw-relayer",
-    "deposit": "ts-node cli execute --action deposit",
-    "withdraw": "ts-node cli execute --action withdraw"
+    "generate": "tsx cli.ts generate",
+    "fund-evm-address": "tsx cli.ts fund-evm-address",
+    "deposit": "tsx cli.ts deposit",
+    "withdraw": "tsx cli.ts withdraw"
   },
   "keywords": [],
   "author": "9oelM",
@@ -21,7 +21,7 @@
   "devDependencies": {
     "@types/node": "^20.11.24",
     "@types/yargs": "^17.0.32",
-    "ts-node": "^10.9.2",
+    "tsx": "^4.19.4",
     "typescript": "^5.3.3"
   }
 }

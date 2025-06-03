@@ -184,11 +184,11 @@ const argv = yargs(process.argv.slice(2))
       console.error("Error generating wallet:", error);
     }
   })
-  .command("fund-withdraw-relayer", `Fund withdraw relayer`, (yargs) => {
+  .command("fund-evm-address", `Fund any EVM address on EVM sidechain`, (yargs) => {
     return yargs.option("destination", {
       type: "string",
       demandOption: true,
-      describe: "EVM destination address to fund the withdraw relayer",
+      describe: "EVM destination address to fund",
     });
   })
   .command("deposit", "Deposit XRP into the Bank contract", (yargs) => {
@@ -260,7 +260,7 @@ async function cli() {
 - Axelar: https://testnet.axelarscan.io/gmp/${result.result.hash}`);
         break;
     }
-    case 'fund-withdraw-relayer': {
+    case 'fund-evm-address': {
         const evmDestination = parsed.destination as string;
 
         if (!isHexString(withoutHexPrefix(evmDestination))) {
@@ -268,7 +268,7 @@ async function cli() {
             return;
         }
 
-        console.log(`Funding withdraw relayer...`);
+        console.log(`Funding an EVM address...`);
 
         const result = await run("donate", `50`, evmDestination);
 
