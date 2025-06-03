@@ -203,7 +203,7 @@ app.post('/withdraw', async (req, res) => {
 
         // Call the contract's withdraw function
         const tx = await contract.withdraw(`0x${withdrawAccountBytes}`, amount, {
-            value: ethers.parseEther("1") // Send 1 ether as axelar gas fee
+            gasLimit: 500000 * 2 // Fixed gas limit that should be sufficient for the withdraw operation
         });
 
         console.log(`Transaction submitted:
@@ -216,7 +216,7 @@ app.post('/withdraw', async (req, res) => {
         // Wait for transaction to be mined
         const receipt = await tx.wait();
 
-        console.log(`Transaction confirmed:
+        console.log(`Transaction confirmed on EVM Sidechain and pending for axelar to process:
             Hash: ${receipt.hash}
             Block Number: ${receipt.blockNumber}
             Gas Used: ${receipt.gasUsed?.toString()}
