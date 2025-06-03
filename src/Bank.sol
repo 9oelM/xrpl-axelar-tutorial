@@ -95,7 +95,7 @@ contract Bank is InterchainTokenExecutable {
             // bytes calldata metadata,
             "",
             // uint256 gasValue
-            1 ether / 10 // 0.1 XRP
+            1 ether // 1 XRP
         );
 
         emit Withdraw(sourceAddress, addressHash, requestedAmount);
