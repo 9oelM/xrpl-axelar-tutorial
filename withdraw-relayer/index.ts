@@ -108,5 +108,7 @@ app.post('/withdraw', async (req, res) => {
 
 app.listen(config.port, () => {
     console.log(`Server running on port ${config.port}`);
-    console.log(`Contract address: ${config.contractAddress}`);
+    console.log(`Destination contract address: ${config.contractAddress}`);
+    console.log(`RPC URL: ${config.rpcUrl}`);
+    console.log(`Relayer public address: ${wallet.address}`);
 });

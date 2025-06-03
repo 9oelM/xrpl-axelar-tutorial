@@ -9,11 +9,12 @@ import {InvalidOp, InvalidTokenId, InvalidTokenAddress, InvalidSourceChain, Insu
 contract Bank is InterchainTokenExecutable {
     event Deposit(bytes indexed sourceAddress, bytes32 addressHash, uint256 amount);
     event Withdraw(bytes indexed sourceAddress, bytes32 addressHash, uint256 amount);
-    event Donate(bytes indexed sourceAddress, bytes32 addressHash, uint256 amount);
 
-    string constant XRPL_AXELAR_CHAIN_ID = "xrpl-dev";
-    bytes32 constant XRP_AXELAR_TOKEN_ID = 0xbfb47d376947093b7858c1c59a4154dd291d5b2251cb56a6f7159a070f0bd518;
-    address constant XRP_ERC20_ADDRESS = 0xD4949664cD82660AaE99bEdc034a0deA8A0bd517;
+    string constant XRPL_AXELAR_CHAIN_ID = "xrpl";
+    // https://explorer.testnet.xrplevm.org/tx/0x79113007ca4591f019e41829a714425c7c8905815c207f93db166348da359add?tab=logs
+    bytes32 constant XRP_AXELAR_TOKEN_ID = 0xba5a21ca88ef6bba2bfff5088994f90e1077e2a1cc3dcc38bd261f00fce2824f;
+    // https://explorer.testnet.xrplevm.org/token/0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE
+    address constant XRP_ERC20_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     bytes32 constant OP_DEPOSIT = keccak256("deposit");
 
@@ -96,6 +97,8 @@ contract Bank is InterchainTokenExecutable {
             // uint256 gasValue
             1 ether / 10 // 0.1 XRP
         );
+
+        emit Withdraw(sourceAddress, addressHash, requestedAmount);
     }
 
     function getBalance(bytes32 addressHash) public view returns (uint256) {
