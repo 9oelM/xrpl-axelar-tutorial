@@ -168,4 +168,4 @@ This is a tutorial for using depositing into and withdrawing from a contract on 
 
 ## Detailed how-to guides
 
-Access [the slides published here](https://www.figma.com/deck/MKVsACmVp2oo9L2InlXTGs/Expanding-XRPL-programmability%3A-hands-on-tutorial-with-Axelar-general-message-passing?node-id=19-45&t=AdpZdEiCn5Rm2BxH-1).
+Access [the slides published here](https://docs.google.com/presentation/d/1hIH3rMG-fL8Q69mlr6PNf5slGTYS67YK30aZ5389lFE/edit?usp=sharing).
