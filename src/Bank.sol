@@ -21,14 +21,21 @@ contract Bank is InterchainTokenExecutable {
     mapping(bytes32 => uint256) public balances;
     address public withdrawRelayer;
 
+    modifier onlyWithdrawRelayer() {
+        if (msg.sender != withdrawRelayer) {
+            revert InvalidWithdrawRelayer(msg.sender);
+        }
+        _;
+    }
+
     constructor(
         address _interchainTokenService,
-        address _withdrawManager
+        address _withdrawRelayer
     ) InterchainTokenExecutable(_interchainTokenService) {
-        if (_withdrawManager == address(0)) {
-            revert InvalidWithdrawRelayer(_withdrawManager);
+        if (_withdrawRelayer == address(0)) {
+            revert InvalidWithdrawRelayer(_withdrawRelayer);
         }
-        withdrawRelayer = _withdrawManager;
+        withdrawRelayer = _withdrawRelayer;
     }
 
     function _executeWithInterchainToken(
@@ -74,8 +81,8 @@ contract Bank is InterchainTokenExecutable {
         balances[addressHash] = balance;
     }
 
-    function withdraw(bytes memory sourceAddress, uint256 requestedAmount) external {
-        bytes32 addressHash = keccak256(sourceAddress);
+    function withdraw(bytes memory destinationAddress, uint256 requestedAmount) external onlyWithdrawRelayer {
+        bytes32 addressHash = keccak256(destinationAddress);
 
         uint256 balance = getBalance(addressHash);
         if (balance < requestedAmount) {
@@ -89,7 +96,7 @@ contract Bank is InterchainTokenExecutable {
             // string calldata destinationChain,
             XRPL_AXELAR_CHAIN_ID,
             // bytes calldata destinationAddress,
-            sourceAddress,
+            destinationAddress,
             // uint256 amount,
             requestedAmount,
             // bytes calldata metadata,
@@ -98,7 +105,7 @@ contract Bank is InterchainTokenExecutable {
             1 ether // 1 XRP
         );
 
-        emit Withdraw(sourceAddress, addressHash, requestedAmount);
+        emit Withdraw(destinationAddress, addressHash, requestedAmount);
     }
 
     function getBalance(bytes32 addressHash) public view returns (uint256) {

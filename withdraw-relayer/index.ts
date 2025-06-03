@@ -119,7 +119,7 @@ app.post('/withdraw', async (req, res) => {
         }
 
         // Convert withdrawAccount to bytes if it's not already
-        const withdrawAccountBytes = ethers.toUtf8Bytes(withdrawAccount);
+        const withdrawAccountBytes = hex(withdrawAccount);
         
         // Convert requestedAmount to BigNumber
         const amount = dropsToEVMSidechainXRPDecimals(BigInt(xrpl.xrpToDrops(requestedAmount)));
@@ -133,8 +133,10 @@ app.post('/withdraw', async (req, res) => {
         `);
 
         // Call the contract's withdraw function
-        const tx = await contract.withdraw(withdrawAccountBytes, amount);
-        
+        const tx = await contract.withdraw(`0x${withdrawAccountBytes}`, amount, {
+            value: ethers.parseEther("1") // Send 1 ether as gas fee
+        });
+
         console.log(`Transaction submitted:
             Hash: ${tx.hash}
             From: ${tx.from}

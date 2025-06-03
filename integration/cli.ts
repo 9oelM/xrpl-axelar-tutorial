@@ -101,10 +101,12 @@ async function sendOp(
   const payloadDataHex = abiCoder.encode(["bytes32"], [id(op.type)]);
   const payload = withoutHexPrefix(payloadDataHex);
 
+  const axelarFee = xrpl.xrpToDrops(`1`)
+
   const tx: xrpl.Transaction = {
     TransactionType: "Payment",
     Account: user.address,
-    Amount: amount,
+    Amount: amount + axelarFee,
     Destination: XRPL_MULTISIG_ADDRESS,
     Memos: [
       {
@@ -128,7 +130,7 @@ async function sendOp(
       {
         Memo: {
           MemoType: hex("gas_fee_amount"),
-          MemoData: hex(xrpl.xrpToDrops(`1`)),
+          MemoData: hex(axelarFee),
         },
       },
       ...(op.type === "donate"
