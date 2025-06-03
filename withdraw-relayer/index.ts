@@ -195,7 +195,7 @@ app.post('/withdraw', async (req, res) => {
 
         console.log(`Initiating withdraw transaction:
             Amount in XRP: ${requestedAmount}
-            Amount in drops: ${amount}
+            Amount in 18 decimals: ${amount}
             Bank contract address: ${config.contractAddress}
             Signer: ${withdrawAccount}
             Withdraw account bytes: ${withdrawAccountBytes}
