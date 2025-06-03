@@ -1,22 +1,15 @@
 import * as xrpl from "xrpl";
 import { AbiCoder, id } from "ethers";
-import {
-  hex,
-  isHexString,
-  withoutHexPrefix,
-} from "./utils";
-import {
-  XRPL_MULTISIG_ADDRESS,
-  XRPL_RPC_URL,
-} from "./constants";
+import { hex, isHexString, withoutHexPrefix } from "./utils";
+import { XRPL_MULTISIG_ADDRESS, XRPL_RPC_URL } from "./constants";
 import yargs from "yargs/yargs";
 import fs from "fs";
 import axios from "axios";
-import dotenv from 'dotenv';
-import path from 'path';
-import { sign } from "ripple-keypairs"
+import dotenv from "dotenv";
+import path from "path";
+import { sign } from "ripple-keypairs";
 
-dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
+dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
 
 // Type-safe configuration
 interface Config {
@@ -28,12 +21,16 @@ function getConfig(): Config {
   const rpcUrl = process.env.WITHDRAW_RELAYER_RPC_URL;
   const bankAddress = process.env.EVM_BANK_ADDRESS;
 
-  if (!rpcUrl) throw new Error('WITHDRAW_RELAYER_RPC_URL environment variable is required');
-  if (!bankAddress) throw new Error('EVM_BANK_ADDRESS environment variable is required');
+  if (!rpcUrl)
+    throw new Error(
+      "WITHDRAW_RELAYER_RPC_URL environment variable is required",
+    );
+  if (!bankAddress)
+    throw new Error("EVM_BANK_ADDRESS environment variable is required");
 
   return {
-      rpcUrl,
-      bankAddress,
+    rpcUrl,
+    bankAddress,
   };
 }
 
@@ -101,7 +98,7 @@ async function sendOp(
   const payloadDataHex = abiCoder.encode(["bytes32"], [id(op.type)]);
   const payload = withoutHexPrefix(payloadDataHex);
 
-  const axelarFee = xrpl.xrpToDrops(`1`)
+  const axelarFee = xrpl.xrpToDrops(`1`);
 
   const tx: xrpl.Transaction = {
     TransactionType: "Payment",
@@ -148,46 +145,54 @@ async function sendOp(
 }
 
 async function withdraw(xrpAmount: string) {
-    try {
-        // Load wallet to sign the request
-        const wallet = await loadWallet();
-        if (!wallet) {
-            console.error("No wallet found in wallet.json. Please generate a wallet first.");
-            return;
-        }
+  try {
+    // Load wallet to sign the request
+    const wallet = await loadWallet();
+    if (!wallet) {
+      console.error(
+        "No wallet found in wallet.json. Please generate a wallet first.",
+      );
+      return;
+    }
 
-        // Create payload to sign
-        const payload = {
-            withdrawAccount: wallet.address,
-            requestedAmount: xrpAmount,
-            timestamp: Date.now()
-        };
+    // Create payload to sign
+    const payload = {
+      withdrawAccount: wallet.address,
+      requestedAmount: xrpAmount,
+      timestamp: Date.now(),
+    };
 
-        // Sign the payload
-        const message = JSON.stringify(payload);
-        const signature = sign(hex(message), wallet.privateKey);
+    // Sign the payload
+    const message = JSON.stringify(payload);
+    const signature = sign(hex(message), wallet.privateKey);
 
-        const response = await axios.post('http://localhost:3000/withdraw', {
-            ...payload,
-            publicKey: wallet.publicKey,
-            signature,
-        });
+    const response = await axios.post("http://localhost:3000/withdraw", {
+      ...payload,
+      publicKey: wallet.publicKey,
+      signature,
+    });
 
-        if (response.data.success) {
-            console.log(`Withdraw transaction submitted successfully:
+    if (response.data.success) {
+      console.log(`Withdraw transaction submitted successfully:
 - Transaction Hash: ${response.data.transactionHash}
 - Block Number: ${response.data.blockNumber}
 - Gas Used: ${response.data.gasUsed}`);
-        } else {
-            console.error('Withdraw request failed:', response.data.error);
-        }
-    } catch (error: unknown) {
-        if (axios.isAxiosError(error)) {
-            console.error('Error communicating with withdraw relayer:', error.response?.data || error.message);
-        } else {
-            console.error('Unexpected error:', error instanceof Error ? error.message : String(error));
-        }
+    } else {
+      console.error("Withdraw request failed:", response.data.error);
     }
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      console.error(
+        "Error communicating with withdraw relayer:",
+        error.response?.data || error.message,
+      );
+    } else {
+      console.error(
+        "Unexpected error:",
+        error instanceof Error ? error.message : String(error),
+      );
+    }
+  }
 }
 
 async function run(action: string, amount: string, evmDestination: string) {
@@ -231,30 +236,40 @@ async function run(action: string, amount: string, evmDestination: string) {
 }
 
 const argv = yargs(process.argv.slice(2))
-  .command("generate", "Generate a new wallet and fund it", {}, async () => {
-    
-  })
-  .command("fund-evm-address", `Fund any EVM address on EVM sidechain`, (yargs) => {
-    return yargs.option("destination", {
-      type: "string",
-      demandOption: true,
-      describe: "EVM destination address to fund",
-    });
-  })
-  .command("deposit", "Deposit XRP into the Bank contract from the address specified in ./wallet.json", (yargs) => {
-    return yargs.option("amount", {
-      type: "number",
-      demandOption: true,
-      describe: "Amount in XRP for deposit. e.g., 0.1 for 0.1 XRP",
-    })
-  })
-  .command("withdraw", "Withdraw from the Bank contract to the address specified in ./wallet.json", (yargs) => {
-    return yargs.option("amount", {
-      type: "number",
-      demandOption: true,
-      describe: "Amount in XRP for withdrawal. e.g., 0.1 for 0.1 XRP",
-    })
-  })
+  .command("generate", "Generate a new wallet and fund it", {}, async () => {})
+  .command(
+    "fund-evm-address",
+    `Fund any EVM address on EVM sidechain`,
+    (yargs) => {
+      return yargs.option("destination", {
+        type: "string",
+        demandOption: true,
+        describe: "EVM destination address to fund",
+      });
+    },
+  )
+  .command(
+    "deposit",
+    "Deposit XRP into the Bank contract from the address specified in ./wallet.json",
+    (yargs) => {
+      return yargs.option("amount", {
+        type: "number",
+        demandOption: true,
+        describe: "Amount in XRP for deposit. e.g., 0.1 for 0.1 XRP",
+      });
+    },
+  )
+  .command(
+    "withdraw",
+    "Withdraw from the Bank contract to the address specified in ./wallet.json",
+    (yargs) => {
+      return yargs.option("amount", {
+        type: "number",
+        demandOption: true,
+        describe: "Amount in XRP for withdrawal. e.g., 0.1 for 0.1 XRP",
+      });
+    },
+  )
   .help().argv;
 
 async function cli() {
@@ -264,108 +279,110 @@ async function cli() {
     console.log(`No command provided. Use --help for usage.`);
     return;
   }
-  
+
   switch (parsed._[0]) {
-    case 'deposit': {
-        const evmDestination = config.bankAddress;
+    case "deposit": {
+      const evmDestination = config.bankAddress;
 
-        if (!isHexString(withoutHexPrefix(evmDestination))) {
-            console.error("Invalid EVM destination address: ", evmDestination);
-            return;
-        }
+      if (!isHexString(withoutHexPrefix(evmDestination))) {
+        console.error("Invalid EVM destination address: ", evmDestination);
+        return;
+      }
 
-        const xrpAmount = parsed.amount as string;
+      const xrpAmount = parsed.amount as string;
 
-        console.log(`Preparing deposit tx...`);
+      console.log(`Preparing deposit tx...`);
 
-        const result = await run(`deposit`, xrpAmount, evmDestination);
+      const result = await run(`deposit`, xrpAmount, evmDestination);
 
-        if (!result) {
-            console.error("Error executing transaction.");
-            return;
-        }
+      if (!result) {
+        console.error("Error executing transaction.");
+        return;
+      }
 
-        if (!result.result.meta || typeof result.result.meta === "string") {
-            console.error("Error getting transaction metadata.");
-            return;
-        }
+      if (!result.result.meta || typeof result.result.meta === "string") {
+        console.error("Error getting transaction metadata.");
+        return;
+      }
 
-        if (result.result.meta.TransactionResult !== "tesSUCCESS") {
-            console.error(
-                "Transaction failed:",
-                result.result.meta.TransactionResult,
-            );
-            return;
-        }
+      if (result.result.meta.TransactionResult !== "tesSUCCESS") {
+        console.error(
+          "Transaction failed:",
+          result.result.meta.TransactionResult,
+        );
+        return;
+      }
 
-        console.log(`Transaction pending. Check: 
+      console.log(`Transaction pending. Check: 
 - XRPL: https://testnet.xrpl.org/transactions/${result.result.hash}
 - Axelar: https://testnet.axelarscan.io/gmp/${result.result.hash}`);
-        break;
+      break;
     }
-    case 'fund-evm-address': {
-        const evmDestination = parsed.destination as string;
+    case "fund-evm-address": {
+      const evmDestination = parsed.destination as string;
 
-        if (!isHexString(withoutHexPrefix(evmDestination))) {
-            console.error("Invalid EVM destination address: ", evmDestination);
-            return;
-        }
+      if (!isHexString(withoutHexPrefix(evmDestination))) {
+        console.error("Invalid EVM destination address: ", evmDestination);
+        return;
+      }
 
-        console.log(`Funding an EVM address...`);
+      console.log(`Funding an EVM address...`);
 
-        const result = await run("donate", `50`, evmDestination);
+      const result = await run("donate", `50`, evmDestination);
 
-        if (!result) {
-            console.error("Error executing transaction.");
-            return;
-        }
+      if (!result) {
+        console.error("Error executing transaction.");
+        return;
+      }
 
-        if (!result.result.meta || typeof result.result.meta === "string") {
-            console.error("Error getting transaction metadata.");
-            return;
-        }
+      if (!result.result.meta || typeof result.result.meta === "string") {
+        console.error("Error getting transaction metadata.");
+        return;
+      }
 
-        if (result.result.meta.TransactionResult !== "tesSUCCESS") {
-            console.error(
-                "Transaction failed:",
-                result.result.meta.TransactionResult,
-            );
-            return;
-        }
+      if (result.result.meta.TransactionResult !== "tesSUCCESS") {
+        console.error(
+          "Transaction failed:",
+          result.result.meta.TransactionResult,
+        );
+        return;
+      }
 
-        console.log(`Transaction pending. Check:
+      console.log(`Transaction pending. Check:
 - XRPL: https://testnet.xrpl.org/transactions/${result.result.hash}
 - Axelar: https://testnet.axelarscan.io/gmp/${result.result.hash}`);
-        break;
+      break;
     }
-    case 'withdraw': {
-        const xrpAmount = parsed.amount as string;
+    case "withdraw": {
+      const xrpAmount = parsed.amount as string;
 
-        if (!xrpAmount) {
-            console.error("Amount is required");
-            return;
-        }
+      if (!xrpAmount) {
+        console.error("Amount is required");
+        return;
+      }
 
-        console.log(`Preparing withdraw request...`);
-        await withdraw(xrpAmount);
-        break;
+      console.log(`Preparing withdraw request...`);
+      await withdraw(xrpAmount);
+      break;
     }
-    case 'generate': {
+    case "generate": {
       try {
         const walletData = await generateWallet();
         fs.writeFileSync("wallet.json", JSON.stringify(walletData, null, 2));
-        console.log("Wallet generated and funded. Secret stored in wallet.json.");
+        console.log(
+          "Wallet generated and funded. Secret stored in wallet.json.",
+        );
         console.log(
           `Check: https://testnet.xrpl.org/accounts/${walletData.address}`,
         );
       } catch (error) {
         console.error("Error generating wallet:", error);
-      }   
+      }
       break;
     }
     default:
-        console.error("Unknown command:", parsed._[0]);
-        break;
+      console.error("Unknown command:", parsed._[0]);
+      break;
   }
 }
 

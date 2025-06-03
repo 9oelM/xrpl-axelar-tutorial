@@ -11,4 +11,3 @@ export const asHexString = (str: string): HexString => {
 };
 export const withoutHexPrefix = (hexStr: string): HexString =>
   asHexString(hexStr.startsWith(`0x`) ? hexStr.slice(2) : hexStr);
-

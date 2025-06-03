@@ -1,19 +1,19 @@
 {
-    "name": "root",
-    "version": "1.0.0",
-    "description": "",
-    "workspaces": [
-        "integration",
-        "withdraw-relayer"
-    ],
-    "scripts": {
-        "generate-wallet": "npm run -w integration generate",
-        "fund-evm-address": "npm run -w integration fund-evm-address --",
-        "deposit": "npm run -w integration deposit --",
-        "withdraw": "npm run -w integration withdraw --",
-        "withdraw-relayer": "npm run -w withdraw-relayer start"
-    },
-    "dependencies": {
-        "ripple-keypairs": "^2.0.0"
-    }
+  "name": "root",
+  "version": "1.0.0",
+  "description": "",
+  "workspaces": [
+    "integration",
+    "withdraw-relayer"
+  ],
+  "scripts": {
+    "generate-wallet": "npm run -w integration generate",
+    "fund-evm-address": "npm run -w integration fund-evm-address --",
+    "deposit": "npm run -w integration deposit --",
+    "withdraw": "npm run -w integration withdraw --",
+    "withdraw-relayer": "npm run -w withdraw-relayer start"
+  },
+  "dependencies": {
+    "ripple-keypairs": "^2.0.0"
+  }
 }
