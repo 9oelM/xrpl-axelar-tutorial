@@ -1,7 +1,6 @@
 import * as xrpl from "xrpl";
 import { AbiCoder, id } from "ethers";
 import {
-  asHexString,
   hex,
   isHexString,
   withoutHexPrefix,
@@ -117,7 +116,7 @@ async function sendOp(
       {
         Memo: {
           MemoType: hex("destination_address"),
-          MemoData: hex(asHexString(withoutHexPrefix(op.evmDestination))),
+          MemoData: hex(withoutHexPrefix(op.evmDestination)),
         },
       },
       {
@@ -164,12 +163,12 @@ async function withdraw(xrpAmount: string) {
 
         // Sign the payload
         const message = JSON.stringify(payload);
-        const signature = sign(message, wallet.privateKey);
+        const signature = sign(hex(message), wallet.privateKey);
 
         const response = await axios.post('http://localhost:3000/withdraw', {
             ...payload,
+            publicKey: wallet.publicKey,
             signature,
-            signer: wallet.address
         });
 
         if (response.data.success) {
@@ -240,22 +239,19 @@ const argv = yargs(process.argv.slice(2))
       describe: "EVM destination address to fund",
     });
   })
-  .command("deposit", "Deposit XRP into the Bank contract", (yargs) => {
+  .command("deposit", "Deposit XRP into the Bank contract from the address specified in ./wallet.json", (yargs) => {
     return yargs.option("amount", {
       type: "number",
       demandOption: true,
       describe: "Amount in XRP for deposit. e.g., 0.1 for 0.1 XRP",
     })
   })
-  .command("withdraw", "Withdraw from the Bank contract", (yargs) => {
+  .command("withdraw", "Withdraw from the Bank contract to the address specified in ./wallet.json", (yargs) => {
     return yargs.option("amount", {
       type: "number",
       demandOption: true,
       describe: "Amount in XRP for withdrawal. e.g., 0.1 for 0.1 XRP",
-    }).option("account", {
-      type: "string",
-      describe: "XRPL account address to withdraw to. Defaults to the address in ./wallet.json. e.g., rEcqMLjKftZWTyYpGzj1jQkBefsMWcxENP",
-    });
+    })
   })
   .help().argv;
 

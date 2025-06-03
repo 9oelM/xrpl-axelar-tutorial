@@ -2,7 +2,7 @@ import express from 'express';
 import { ethers } from 'ethers';
 import dotenv from 'dotenv';
 import path from 'path';
-import xrpl from 'xrpl';
+import * as xrpl from 'xrpl';
 import { verify } from 'ripple-keypairs';
 
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
@@ -33,6 +33,8 @@ function getConfig(): Config {
     };
 }
 
+const hex = (str: string): string => Buffer.from(str).toString("hex");
+
 const dropsToEVMSidechainXRPDecimals = (drops: bigint) => {
   // 0.000001 XRP = 1 drop = 1000000000000 on EVM Sidechain
   // https://explorer.xrplevm.org/tx/0xfc3e47b3de64fa56d805957b7fe5d26cad5a0ce2fef1c781cc3c98e8f3a0d6d5?tab=logs
@@ -46,7 +48,7 @@ app.use(express.json());
 
 // Contract ABI - only including the withdraw function
 const contractABI = [
-    "function withdraw(bytes memory withdrawAccount, uint256 requestedAmount) external"
+    "function withdraw(bytes memory sourceAddress, uint256 requestedAmount) external"
 ];
 
 // Initialize provider and contract
@@ -61,13 +63,21 @@ const contract = new ethers.Contract(
 // Endpoint to handle withdraw requests
 app.post('/withdraw', async (req, res) => {
     try {
-        const { withdrawAccount, requestedAmount, timestamp, signature, signer } = req.body;
+        const { withdrawAccount, publicKey, requestedAmount, timestamp, signature } = req.body;
 
-        if (!withdrawAccount || !requestedAmount || !timestamp || !signature || !signer) {
+        if (!withdrawAccount || !publicKey || !requestedAmount || !timestamp || !signature) {
             return res.status(400).json({
-                error: 'Missing required parameters: withdrawAccount, requestedAmount, timestamp, signature, and signer'
+                error: 'Missing required parameters: withdrawAccount, publicKey, requestedAmount, timestamp, signature'
             });
         }
+
+        console.log(`Received withdraw request:
+            Withdraw Account: ${withdrawAccount}
+            Public key: ${publicKey}
+            Requested Amount: ${requestedAmount}
+            Timestamp: ${timestamp}
+            Signature: ${signature}
+            `);
 
         // Validate xrpl address
         if (!xrpl.isValidAddress(withdrawAccount)) {
@@ -76,8 +86,10 @@ app.post('/withdraw', async (req, res) => {
             });
         }
 
+        console.log(`typeof requestedAmount: ${typeof requestedAmount}`);
+
         // Validate requestedAmount
-        if (typeof requestedAmount !== 'string' || isNaN(Number(requestedAmount)) || Number(requestedAmount) <= 0) {
+        if (isNaN(Number(requestedAmount)) || Number(requestedAmount) <= 0) {
             return res.status(400).json({
                 error: 'Invalid requestedAmount. It must be a positive number in string format, in the unit of native XRP.'
             });
@@ -91,7 +103,7 @@ app.post('/withdraw', async (req, res) => {
         };
         const message = JSON.stringify(payload);
         
-        const isValid = verify(message, signature, signer);
+        const isValid = verify(hex(message), signature, publicKey);
         if (!isValid) {
             return res.status(401).json({
                 error: 'Invalid signature'
@@ -113,10 +125,12 @@ app.post('/withdraw', async (req, res) => {
         const amount = dropsToEVMSidechainXRPDecimals(BigInt(xrpl.xrpToDrops(requestedAmount)));
 
         console.log(`Initiating withdraw transaction:
-            Source Address: ${withdrawAccount}
-            Amount: ${requestedAmount}
-            Contract Address: ${config.contractAddress}
-            Signer: ${signer}`);
+            Amount in XRP: ${requestedAmount}
+            Amount in drops: ${amount}
+            Bank contract address: ${config.contractAddress}
+            Signer: ${withdrawAccount}
+            Withdraw account bytes: ${withdrawAccountBytes}
+        `);
 
         // Call the contract's withdraw function
         const tx = await contract.withdraw(withdrawAccountBytes, amount);
