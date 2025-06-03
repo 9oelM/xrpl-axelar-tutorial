@@ -95,7 +95,7 @@ async function sendOp(
       {
         Memo: {
           MemoType: hex("destination_address"),
-          MemoData: asHexString(withoutHexPrefix(op.evmDestination)),
+          MemoData: hex(asHexString(withoutHexPrefix(op.evmDestination))),
         },
       },
       {
@@ -161,8 +161,21 @@ async function run(action: string, amount: string, evmDestination: string) {
     return;
   }
 
-  if (action === "deposit" || action === "donate") {
+  if (action === "deposit") {
     const result = await sendOp(client, user, {
+      type: action,
+      amountInXRP: amount,
+      evmDestination,
+    });
+
+    await client.disconnect();
+    return result;
+  } else if (action === "donate") {
+    const wallet = await generateWallet();
+    const fundedUser = xrpl.Wallet.fromSeed(wallet.secret, {
+      algorithm: xrpl.ECDSA.secp256k1,
+    });
+    const result = await sendOp(client, fundedUser, {
       type: action,
       amountInXRP: amount,
       evmDestination,

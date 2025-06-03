@@ -2,11 +2,14 @@
     "name": "root",
     "version": "1.0.0",
     "description": "",
+    "workspaces": [
+        "integration",
+        "withdraw-relayer"
+    ],
     "scripts": {
-      "generate-wallet": "ts-node cli generate",
-      "fund-withdraw-relayer": "ts-node cli fund-withdraw-relayer",
-      "deposit": "ts-node cli execute --action deposit",
-      "withdraw": "ts-node cli execute --action withdraw"
-    },
-    
+      "generate-wallet": "npm run -w integration generate",
+      "fund-evm-address": "npm run -w integration fund-evm-address",
+      "deposit": "npm run -w integration deposit",
+      "withdraw": "npm run -w integration withdraw"
+    }
 }
