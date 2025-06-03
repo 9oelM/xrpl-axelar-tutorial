@@ -19,6 +19,27 @@ import { sign } from "ripple-keypairs"
 
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
+// Type-safe configuration
+interface Config {
+  rpcUrl: string;
+  bankAddress: string;
+}
+
+function getConfig(): Config {
+  const rpcUrl = process.env.WITHDRAW_RELAYER_RPC_URL;
+  const bankAddress = process.env.EVM_BANK_ADDRESS;
+
+  if (!rpcUrl) throw new Error('WITHDRAW_RELAYER_RPC_URL environment variable is required');
+  if (!bankAddress) throw new Error('EVM_BANK_ADDRESS environment variable is required');
+
+  return {
+      rpcUrl,
+      bankAddress,
+  };
+}
+
+const config = getConfig();
+
 const abiCoder = AbiCoder.defaultAbiCoder();
 
 async function generateWallet() {
@@ -224,11 +245,7 @@ const argv = yargs(process.argv.slice(2))
       type: "number",
       demandOption: true,
       describe: "Amount in XRP for deposit. e.g., 0.1 for 0.1 XRP",
-    }).option("destination", {
-      type: "string",
-      demandOption: true,
-      describe: "EVM destination address to deposit to",
-    });
+    })
   })
   .command("withdraw", "Withdraw from the Bank contract", (yargs) => {
     return yargs.option("amount", {
@@ -252,7 +269,7 @@ async function cli() {
   
   switch (parsed._[0]) {
     case 'deposit': {
-        const evmDestination = parsed.destination as string;
+        const evmDestination = config.bankAddress;
 
         if (!isHexString(withoutHexPrefix(evmDestination))) {
             console.error("Invalid EVM destination address: ", evmDestination);

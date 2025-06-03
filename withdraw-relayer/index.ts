@@ -18,12 +18,12 @@ interface Config {
 function getConfig(): Config {
     const rpcUrl = process.env.WITHDRAW_RELAYER_RPC_URL;
     const privateKey = process.env.WITHDRAW_RELAYER_PRIVATE_KEY;
-    const contractAddress = process.env.WITHDRAW_RELAYER_DESTINATION_CONTRACT_ADDRESS;
+    const contractAddress = process.env.EVM_BANK_ADDRESS;
     const port = process.env.WITHDRAW_RELAYER_PORT ? parseInt(process.env.WITHDRAW_RELAYER_PORT, 10) : 3000;
 
     if (!rpcUrl) throw new Error('WITHDRAW_RELAYER_RPC_URL environment variable is required');
     if (!privateKey) throw new Error('WITHDRAW_RELAYER_PRIVATE_KEY environment variable is required');
-    if (!contractAddress) throw new Error('WITHDRAW_RELAYER_DESTINATION_CONTRACT_ADDRESS environment variable is required');
+    if (!contractAddress) throw new Error('EVM_BANK_ADDRESS environment variable is required');
 
     return {
         rpcUrl,
