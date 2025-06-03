@@ -3,7 +3,7 @@ import { ethers } from 'ethers';
 import dotenv from 'dotenv';
 import path from 'path';
 
-dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
 // Type-safe configuration
 interface Config {
