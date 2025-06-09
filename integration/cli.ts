@@ -47,7 +47,7 @@ async function generateWallet() {
 
   console.log(`Generating and funding wallet...`);
 
-  await client.fundWallet(user, { amount: "1000" });
+  await client.fundWallet(user, { amount: "100" });
 
   const walletData = {
     address: user.address,
@@ -199,16 +199,16 @@ async function run(action: string, amount: string, evmDestination: string) {
   const client = new xrpl.Client(XRPL_RPC_URL);
   await client.connect();
 
-  const user = await loadWallet();
-
-  if (!user) {
-    await client.disconnect();
-
-    console.error("Error loading wallet.");
-    return;
-  }
-
+  
   if (action === "deposit") {
+    const user = await loadWallet();
+  
+    if (!user) {
+      await client.disconnect();
+  
+      console.error("Error loading wallet.");
+      return;
+    }
     const result = await sendOp(client, user, {
       type: action,
       amountInXRP: amount,
